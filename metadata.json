@@ -1,0 +1,6 @@
+{
+  "name": "Pak Chat",
+  "description": "A real-time messaging application for Android phones and tablets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

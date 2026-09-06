@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isChatParticipant(chatData) {
+      return isAuthenticated() && (request.auth.uid in chatData.participants);
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.auth.uid == userId);
+      allow delete: if false;
+    }
+
+    // Chats Collection
+    match /chats/{chatId} {
+      allow read: if isAuthenticated() && (
+        resource == null || isChatParticipant(resource.data)
+      );
+      allow create: if isAuthenticated() && isChatParticipant(request.resource.data);
+      allow update: if isAuthenticated() && (
+        isChatParticipant(resource.data) || isChatParticipant(request.resource.data)
+      );
+      allow delete: if false;
+
+      // Messages Subcollection
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+        allow update: if isAuthenticated();
+        allow delete: if isAuthenticated() && (
+          resource.data.senderId == request.auth.uid ||
+          resource.data.receiverId == request.auth.uid
+        );
+      }
+    }
+
+    // Statuses Collection
+    match /statuses/{statusId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Calls Collection
+    match /calls/{callId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.callerId == request.auth.uid;
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+  }
+}
